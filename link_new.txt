@@ -108,6 +108,43 @@ export PIG_CLASSPATH=$HADOOP_CONF_DIR
 source ~/.bashrc 
 
 
+------------------
+Pig
+
+Exercise 1:
+
+drivers = LOAD '/data/pig/supply_chain/drivers.csv' USING PigStorage(',') AS (driverId:int, name:chararray, ssn:chararray, location:chararray, certified:chararray, wage_plan:chararray) ;
+
+truck_events = LOAD '/data/pig/supply_chain/truck_event_text_partition.csv' USING PigStorage(',') AS (driverId:int, truckId:int, eventTime:chararray, eventType:chararray, longitude:double, latitude:double, eventKey:chararray, correlationId:long, driverName:chararray, routeId:long, routeName:chararray, eventDate:chararray); 
+
+specific_columns = FOREACH truck_events GENERATE driverId, eventType; 
+
+filtered_events = FILTER specific_columns BY NOT (eventType MATCHES 'Normal'); 
+
+
+join_data = JOIN  filtered_events BY (driverId), drivers BY (driverId); 
+
+grouped_events = GROUP join_data BY filtered_events::driverId; 
+
+grouped_events_id = GROUP join_data BY filtered_events::driverId; 
+
+grouped_events_new = GROUP join_data BY drivers::name; 
+
+grouped_events_new_name = foreach grouped_events_new generate group as drivers::name;
+
+STORE driverWithIncident.txt INTO '/data/pig/supply_chain/output' USING PigStorage(',');
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
