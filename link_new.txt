@@ -1,0 +1,117 @@
+https://github.com/shyam-kantesariya/big_data_course
+
+git clone https://github.com/shyam-kantesariya/big_data_course.git
+
+https://goo.gl/forms/9zd2EWoGVECXFPap1
+
+
+G:\HongSong\Ubunto Hadoop
+
+
+/usr/lib/jvm/java-8-openjdk-i386
+/usr/lib/jvm/java-8-openjdk-i386/jre/bin/java
+
+
+
+wget https://archive.apache.org/dist/hadoop/core/hadoop-2.6.5/hadoop-2.6.5.tar.gz   
+tar -xvzf hadoop-2.6.5.tar.gz 
+
+
+-- sudo commands need to be executed one by one and cannot by copy/paste and run
+
+sudo chown -R student:student /usr/local/hadoop 
+
+sudo apt-get install vim --- to be used for vi content to be colorful
+
+
+sudo mkdir -p /app/hadoop/tmp  
+sudo chown student:student /app/hadoop/tmp 
+ 
+sudo mkdir -p /usr/local/hadoop_store/hdfs/namenode  
+sudo mkdir -p /usr/local/hadoop_store/hdfs/datanode  
+sudo chown -R student:student /usr/local/hadoop_store 
+
+
+which hadoop
+
+
+
+core-site.xml:
+
+<configuration>    
+	<property>   
+		<name>hadoop.tmp.dir</name>   
+		<value>/app/hadoop/tmp</value>   
+		<description>A base for other temporary directories.</description>  
+	</property> 
+ 
+ 	<property>   
+		<name>fs.default.name</name>   
+		<value>hdfs://localhost:54310</value>   
+		<description>The name of the default file system.  A URI whose   scheme and authority determine the FileSystem implementation.  The   uri's scheme determines the config property (fs.SCHEME.impl) naming   the FileSystem implementation class.  The uri's authority is used to   determine the host, port, etc. for a filesystem.</description>  
+	</property>   
+</configuration> 
+
+hdfs-site.xml :
+<configuration> 
+	<property>   
+		<name>dfs.replication</name>   
+		<value>1</value> 
+  		<description>Default block replication.   The actual number of replications can be specified when the file is created.   The default is used if replication is not specified in create time. </description>  
+	</property> 
+ 
+ 	<property>    
+		<name>dfs.namenode.name.dir</name>    
+		<value>file:/usr/local/hadoop_store/hdfs/namenode</value>  
+	</property> 
+ 
+ 	<property>    
+		<name>dfs.datanode.data.dir</name>    
+		<value>file:/usr/local/hadoop_store/hdfs/datanode</value>  
+	</property> 
+</configuration> 
+
+
+yarn-site.xml:   
+<configuration>   
+	<property> 
+		<name>yarn.nodemanager.aux-services</name> 
+		<value>mapreduce_shuffle</value> 
+	</property> 
+	<property> 
+		<name>yarn.nodemanager.auxservices.mapreduce.shuffle.class</name> 
+		<value>org.apache.hadoop.mapred.ShuffleHandler</value> 
+	</property>   
+</configuration> 
+
+---
+
+This directory contains the files:
+/usr/local/hadoop_store/hdfs/datanode/current/BP-1791369054-127.0.1.1-1569079145144/current/finalized/subdir0/subdir0
+
+
+
+wget https://www.apache.org/dist/pig/pig-0.16.0/pig-0.16.0.tar.gz    
+tar -xvzf pig-0.16.0.tar.gz
+
+sudo mv pig-0.16.0 /usr/local/hadoop/pig 
+sudo chown -R student:student /usr/local/hadoop/pig
+
+vi ~/.bashrc 
+
+#PIG VARIABLES START 
+export PIG_HOME=$HADOOP_INSTALL/pig 
+export PATH=$PATH:$PIG_HOME/bin 
+export PIG_CLASSPATH=$HADOOP_CONF_DIR 
+#PIG VARIABLES END 
+
+source ~/.bashrc 
+
+
+
+
+
+ 
+
+
+
