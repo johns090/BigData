@@ -67,3 +67,6 @@ sqoop export --connect jdbc:mysql://localhost:3306/retail_db --username retail_d
 
 
 
+sqoop export --connect jdbc:mysql://localhost:3306/retail_db --username retail_dba --password cloudera  --table t1 --fields-terminated-by ',' --input-null-string "\\\\N" --input-null-non-string "\\\\N" --export-dir "/retail/sqooptest"
+
+
