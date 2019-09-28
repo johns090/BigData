@@ -1,0 +1,171 @@
+\\bh210-12\Shyam
+
+cloudera-quickstart-vm-5.13.0-0-vmware
+
+https://docs.google.com/document/d/1JOMmQdGCofk6IYxGExxDt-JpUlvqX4TeDLdD_cBIUNk/edit?usp=sharing
+
+Hive is more advanced than Pig.
+
+Hive use HDFS for storage.
+
+Data ingestion: get data from different different sources.
+
+
+
+
+
+hive
+
+show databases;
+
+create database temporarydb;
+
+hadoop fs -ls /user/hive/warehouse
+
+directly exist: /user/hive/warehouse/temporarydb.db
+
+use temporarydb;
+
+create table t1(c1 int, c2 int);
+
+insert into t1 values(1, 1); 
+
+ CREATE TABLE movie (movieId INT, movieName STRING) LOCATION '/data/mydb/movie' ; 
+ CREATE TABLE movie (movieId INT, movieName STRING) ROW FORMAT DELIMITED FIELDS TERMINATED BY ‘,’; 
+
+create table Orders (RowID int,OrderID string,OrderDate string,ShipDate string,ShipMode string,CustomerID string,CustomerName string,Segment string,Country String,City string,State string,PostalCode string,Region string,ProductID string,Category string,SubCategory string,ProductName string,Sales double,Quantity int,Discount double,Profit double) row format delimited fields terminated by ',';
+
+LOAD DATA LOCAL INPATH '/home/cloudera/Desktop/exercise/Exercise1/Orders.csv' INTO TABLE orders
+
+create table people(Person string, Region string) row format delimited fields terminated by ',';
+create table returns(Returned string, OrderID string) row format delimited fields terminated by ',';
+
+LOAD DATA LOCAL INPATH '/home/cloudera/Desktop/exercise/Exercise1/People.csv' INTO TABLE people;
+LOAD DATA LOCAL INPATH '/home/cloudera/Desktop/exercise/Exercise1/Returns.csv' INTO TABLE returns;
+
+invalidate METADATA;  --- for impala-shell to recognize objects created by HIVE
+
+
+Load tables ? Load data files to table 
+? SELECT: 
+? City which generates highest revenue 
+
+select t.city, t.sale2
+from (
+select sum(sales) as sale2, city, state
+from orders
+group by state, city ) t order by t.sale2 desc limit 1;
+
+New York City	256368.161
+Time taken: 40.996 seconds, Fetched: 1 row(s)
+
+
+? Top five selling products 
+
+select t.productname, t.sale2
+from (
+select sum(sales) as sale2, productname
+from orders
+group by productname ) t order by t.sale2 desc limit 5;
+
++-----------------------------------------------------------------------------+-----------+
+| productname                                                                 | sale2     |
++-----------------------------------------------------------------------------+-----------+
+| Canon imageCLASS 2200 Advanced Copier                                       | 61599.824 |
+| Fellowes PB500 Electric Punch Plastic Comb Binding Machine with Manual Bind | 27453.384 |
+| Cisco TelePresence System EX90 Videoconferencing Unit                       | 22638.48  |
+| HON 5400 Series Task Chairs for Big and Tall                                | 21870.576 |
+| GBC DocuBind TL300 Electric Binding System                                  | 19823.479 |
++-----------------------------------------------------------------------------+-----------+
+
+
+? Top five profit making products with its category and sub category 
+
+select t.productname , t.category, t.subcategory,  t.sale2
+from (
+select sum(profit) as sale2,  productname ,  category, subcategory 
+from orders
+group by category, subcategory, productname ) t order by t.sale2 desc limit 5;
+
++-----------------------------------------------------------------------------+-----------------+-------------+-----------+
+| productname                                                                 | category        | subcategory | sale2     |
++-----------------------------------------------------------------------------+-----------------+-------------+-----------+
+| Canon imageCLASS 2200 Advanced Copier                                       | Technology      | Copiers     | 25199.928 |
+| Fellowes PB500 Electric Punch Plastic Comb Binding Machine with Manual Bind | Office Supplies | Binders     | 7753.039  |
+| Hewlett Packard LaserJet 3310 Copier                                        | Technology      | Copiers     | 6983.8836 |
+| Canon PC1060 Personal Laser Copier                                          | Technology      | Copiers     | 4570.9347 |
+| "HP Designjet T520 Inkjet Large Format Printer - 24"" Color"                | Technology      | Machines    | 4094.9766 |
++-----------------------------------------------------------------------------+-----------------+-------------+-----------+
+
+
+? Most frequent buyer - exclude transactions for which buyer detail is missing 
+
+select t.customername, t.frequency
+from (
+select count(1) as frequency, orders.customername
+from orders, people 
+where orders.customername = people.person
+group by orders.customername ) t order by t.frequency desc limit 1;
+
++-------------------+-----------+
+| customername      | frequency |
++-------------------+-----------+
+| Cassandra Brandow | 26        |
++-------------------+-----------+
+
+
+? Most revenue generator buyer - exclude transactions for which buyer detail is missing 
+
+select t.customername, t.sale2
+from (
+select sum(sales) as sale2, orders.customername
+from orders, people 
+where orders.customername = people.person
+group by orders.customername ) t order by t.sale2 desc limit 1;
+
++-------------------+-------------------+
+| customername      | sale2             |
++-------------------+-------------------+
+| Cassandra Brandow | 6076.138999999999 |
++-------------------+-------------------+
+
+
+
+
+? UPDATE: 
+? Modify the region of customer “?Anna Andreadi” to East in People 
+
+
+INSERT OVERWRITE TABLE people SELECT person, CASE WHEN person='Anna Andreadi' THEN 'East' ELSE region END as region FROM people;
+
++-------------------+---------+
+| person            | region  |
++-------------------+---------+
+| Anna Andreadi     | East    |
+| Chuck Magee       | East    |
+| Kelly Williams    | Central |
+| Cassandra Brandow | South   |
++-------------------+---------+
+
+
+? DELETE: ? Delete all the records with “East” region in People file 
+ 
+ 
+INSERT OVERWRITE TABLE people SELECT * FROM people where region != 'East';
+
+Kelly Williams	Central
+Cassandra Brandow	South
+
+
+
+----------------------------------
+
+-- to remove the header (first line) of a file
+sed -i 1d Orders.csv
+
+-- can be used for find and replace -- to check "-i"
+sed -i 's/abc/xwy/w'  filename
+
+
+
+
