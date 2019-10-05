@@ -1,0 +1,11 @@
+
+
+
+
+get 'emp', '1', {COLUMN => 'personal data:city'}
+
+
+delete 'emp', '1', 'professional data:salary'
+
+
+
