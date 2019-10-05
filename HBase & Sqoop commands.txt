@@ -68,6 +68,11 @@ sqoop job --show myjob
 sqoop job --exec myjob 
 
 
+-- Insert a record into RDBMS table 
+
+sqoop eval --connect jdbc:mysql://localhost:3306/retail_db --username retail_dba  --password cloudera  -e "INSERT INTO test VALUES(999, 'name999')" 
+
+
 
 
 
