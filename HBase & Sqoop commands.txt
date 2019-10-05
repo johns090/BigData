@@ -1,0 +1,78 @@
+
+
+--- preparation
+
+get 'emp', '1', {COLUMN => 'personal data:city'}
+
+
+delete 'emp', '1', 'professional data:salary'
+
+
+---
+Sqoop test:
+
+--prepare data
+
+CREATE TABlE test(id INT, name STRING) ROW FORMAT delimited fields terminated by ',' LINES TERMINATED BY '\n' STORED AS TEXTFILE; 
+
+
+CREATE TABlE test(id int, name varchar(20));
+
+
+
+Insert into test values(1,'name1'); 
+Insert into test values(2,'name2'); 
+
+describe formatted test;  --- to get the directory
+
+--- export 
+sqoop export --connect jdbc:mysql://localhost:3306/retail_db --username retail_dba --password cloudera --table test --fields-terminated-by ',' --export-dir /user/hive/warehouse/retail_db.db/test 
+
+sqoop export --connect jdbc:mysql://localhost:3306/retail_db --username retail_dba --password cloudera --table test --fields-terminated-by ',' --export-dir /user/hive/warehouse/retail_db.db/test --updatekey 'id'
+
+
+/user/hive/warehouse/retail_db.db/test 
+
+-- can update data from hive and export again to MySql
+
+after import:
+refresh test;  ---- refresh the cache
+select * from test;
+
+--- import
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table test --m 1 --target-dir /user/hive/warehouse/retail_db.db/test1 --append
+
+-- anohter way is to import directly to Hive db with xxxx, when you don't know the location of the table under Hive:  --hive-import retail_db.test --split-by 'c1' --fields-terminated-by ','
+-- because table location could be changed anytime.
+
+
+
+
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table test --m 1 --target-dir /user/hive/warehouse/retail_db.db/test1  --delete-target-dir   ---(by specific versioin), or --append
+sqoop import --connect jdbc:mysql://localhost:3306/retail_db --username root --password cloudera --table test --target-dir /user/hive/warehouse/retail_db.db/test2
+-- 19/10/05 11:06:42 ERROR tool.ImportTool: Import failed: No primary key could be found for table test. Please specify one with --split-by or perform a sequential import with '-m 1'. 
+-- by default sqoop create 4 mappers.
+-- if the mysql table contains primary key, then with --m 1 should be ok.
+-- or can use the --split-by 'c1', the the import result will be in two files.
+
+
+-- create job
+
+sqoop job --create myjob -- import --connect jdbc:mysql://localhost:3306/retail_db --username retail_dba  --password cloudera --table departments --target-dir /user/hive/warehouse/retail_db.db/myjob -fields-terminated-by ','
+
+sqoop job --list 
+
+sqoop job --show myjob 
+
+sqoop job --exec myjob 
+
+
+
+
+
+
+
+
+
+
