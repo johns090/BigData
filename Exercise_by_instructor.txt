@@ -1,0 +1,112 @@
+Create database targetdb at HDFS location /data/target/targetdb
+
+CREATE DATABASE targetdb LOCATION ‘/data/target/targetdb’
+
+? Create tables: movies, ratings, tags in targetdb database
+
+create table movies (movieId int, title string, genres string) row format delimited fields terminated by ',';
+
+create table ratings (userId int,movieId int,rating double,t_stamp decimal(12,0)) row format delimited fields terminated by ',';
+
+create table tags (userId int,movieId int,tag string,t_stamp decimal(12,0)) row format delimited fields terminated by ',';
+
+? Load the relevant data files to those tables
+
+hadoop fs -put Desktop/data/Dataset1/movies.csv /data/target/targetdb/movies/
+hadoop fs -put Desktop/data/Dataset1/ratings.csv /data/target/targetdb/ratings/
+hadoop fs -put Desktop/data/Dataset1/tags.csv /data/target/targetdb/tags/
+
+
+OR
+
+hadoop fs -chmod -R 777  /data
+hadoop fs -mkdir '/data/input/impala/' 
+hadoop fs -put Desktop/data/Dataset1/movies.csv /data/input/impala/
+load data inpath '/data/input/impala/' into table movies;
+
+? Prepare a SQL to load movie_stats table.
+
+create TABLE movie_stats (movieid int, movie_name string, avg_rating decimal(9,2), hash_tag string, hash_tag_cnt int) row format delimited fields terminated by ','
+
+INSERT INTO movie_stats 
+Select t1.*,  t2.tag, t2.tag_cnt from 
+(select m.movieid, m.title, CAST(avg(r.rating) AS DECIMAL(9,2)) from movies m join ratings r on m.movieid = r.movieid  group by m.movieid, m.title) t1
+JOIN
+(select  movieid, tag, CAST(count(tag) AS INT) as tag_cnt from tags group by movieid, tag) t2
+ON
+T1.movieid = t2.movieid
+Reference only: Its not going to give you correct result
+
+INSERT INTO movie_stats2
+SELECT m.movieid, m.title, CAST(avg(r.rating) over(partition by m.movieid) AS DECIMAL(9,2)) , tag, CAST(count(tag) over(partition by t.movieid, t.tag) AS INT)
+FROM
+    Movies m 
+JOIN 
+    Ratings r
+ON
+    M.movieid = r.movieid
+JOIN 
+    Tags t
+ON
+    M.movieid = t.movieid
+
+
+
+Create new database stagedb at location /data/staging/stagedb
+
+CREATE DATABASE stagedb LOCATION '/data/stage/stagedb'
+
+? Create tables movies, ratings, tags under database stagedb with same details as
+targetdb tables
+
+USE stagedb;
+
+create table movies like targetdb.movies;
+
+Do not create this way, it doesn’t copy the exact format
+create table ratings as select * from targetdb.ratings limit 0        
+
+create table ratings like targetdb.ratings;
+
+create table tags like targetdb.tags;
+
+? Load the relevant data files to those tables
+
+hadoop fs -put Desktop/data/Dataset2/movies.csv /data/stage/stagedb/movies/
+hadoop fs -put Desktop/data/Dataset2/ratings.csv /data/stage/stagedb/ratings/
+hadoop fs -put Desktop/data/Dataset2/tags.csv /data/stage/stagedb/tags/
+
+? Prepare three different scripts, one for each to load stage tables with given data files
+considering all possible integrity checks as
+? Movie ID is unique and not null field. Hence have to check for any unique key as
+well as not null violation
+
+select count(*) from movies where movieid is null;
+
+select movieid, count(*) from movies group by movieid having count(*)>1;
+
+select count(*) from movies m1 join targetdb.movies m2 on m1.movieid = m2.movieid;
+
+How to run an hql file on impala
+impala-shell -f movies.hql -d stagedb
+
+How to run a query on impala
+impala-shell -q "select count(*) from movies where movieid is null" -d stagedb;
+
+
+
+? Rating should be for a valid movie. Hence movieId in rating data file should be
+present in Movie table
+? If there is any exact duplicate record then we must discard one
+
+
+
+
+
+
+EXTRA:
+create table t1 (tx_id int, name string) partitioned by (tx_date string) row format delimited fields terminated by ',';
+
+insert into t1 partition(tx_date='2019-01-01') values(1,'Cookies');
+
+
