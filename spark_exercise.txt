@@ -1,0 +1,18 @@
+case class Employee(firstName: String, lastName:String, deptId: Int) 
+
+val people = sc.textFile("/home/cloudera/Desktop/exercise_6/Spark/data/employee.txt").map(_.split(",")).map(e => Employee(e(0), e(1), e(2).trim.toInt)).toDF() 
+
+import sqlContext.implicits._ 
+
+import org.apache.spark.sql.Row 
+import org.apache.spark.sql.types.{StructType, StructField, StringType, IntegerType}; 
+
+
+// Generate schema 
+val schema = StructType(Seq(StructField("fname", StringType, true), StructField("lname", StringType, true), StructField("deptId", IntegerType, true))) 
+
+// Convert records of RDD to Rows. 
+val rowRDD = people.map(_.split(",")).map(e =>Row(e(0), e(1), e(2).trim.toInt)) 
+ 
+// Apply the schema to the RDD. 
+val peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema) 

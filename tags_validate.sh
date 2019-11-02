@@ -1,5 +1,5 @@
 
-
+-- this can be used:  insert overwrite table tags select distinct * from tags;
 
 impala-shell -d stagedb -q "select distinct movieid from tags where movieid not in (select movieid from movies)" -o output.out -B --quiet --output_delimiter "," 
 
