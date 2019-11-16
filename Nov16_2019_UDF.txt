@@ -1,0 +1,38 @@
+create function agegroup2 as 'udf.AgeGroup' using jar 'hdfs://quickstart.cloudera:8020/udf/agegroup.jar';
+create function isaccepted as 'udf.IsAccepted' using jar 'hdfs://quickstart.cloudera:8020/udf/agegroup.jar';
+
+create function isacceptednew as 'udf.IsAcceptedNew' using jar 'hdfs://quickstart.cloudera:8020/udf/agegroup.jar';
+
+spark.sql( "SELECT * FROM targetdb1.person")
+
+spark.sql(
+  "u")
+
+
+context = HiveContext(sc)
+
+ results = context.sql( "SELECT * FROM people") names = results.map(lambda p: p.name)
+
+cp /etc/hive/conf.dist/hive-site.xml .
+
+
+create table result(student_id int, bands array<double>) row format delimited fields terminated by '|' collection items terminated by ','
+
+insert into result select 10 , array(cast(4.5 as double),cast(6.7 as double));
+
+hdfs fs -cat /user/hive/warehouse/mydb.db/result/000000_0
+
+select student_id, isacceptednew(bands, cast(2 as double), cast(3 as double)) from result;
+
+select student_id, isaccepted(bands, cast(2 as double), cast(3 as double)) from result;
+
+select student_id, isaccepted(cast(bands as list), cast(2 as double), cast(3 as double)) from result;
+
+
+hive --hiveconf hive.root.logger=DEBUG,console
+
+hive -hiveconf hive.log.file=debug_hive_20180403.log -hiveconf hive.log.dir=/tmp/hivedebug/ -hiveconf hive.root.logger=DEBUG,DRFA
+
+create table result2(student_id int, bands double) row format delimited fields terminated by '|' collection items terminated by ',';
+
+insert into result2 values (1, 8.0), (1, 9.0), (1, 5.5), (1, 8.3), (2, 3.5), (2, 5.5), (2, 7.5);
