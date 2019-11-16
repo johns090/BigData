@@ -6,3 +6,28 @@ use stging;
 
 
 create table store(store_id int, store_num string, city string, address string, open_date string, close_date string ) row format delimited fields terminated by ','   ;
+
+create table employee(Employee_id int,	Employee_num int,	Store_num string,	Employee_name string,	Joining_date string,	designation string ) row format delimited fields terminated by ','   ;
+
+create table promotion(Promo_code_id int,	promo_code  string,	description  string,	Promo_start_date string,	Promo_end_date string ) row format delimited fields terminated by ','   ;
+
+create table Loyalty(Loyalty_member_num int, cust_num int,	card_no string,	joining_date string,	points int ) row format delimited fields terminated by ','   ;
+
+create table product(product_id int, product_code string,	add_dt string,	remove_dt string ) row format delimited fields terminated by ','   ;
+
+create table Trans_codes(Trans_code_id int,	Trans_Code string,	Description string ) row format delimited fields terminated by ','   ;
+
+create table Trans_Strings(Trans_code_id int,	Trans_Code string, column1 string, column2 string, column3 string, column4 string, column5 string, column6 string, column7 string, column8 string, column9 string ) row format delimited fields terminated by ','  ;
+
+
+create table target(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Id int,	Promo_Code_Id int,	Emp_Id int,	Amt double,	Qty int,	Tx_Date string) row format delimited fields terminated by ','   ;
+drop table target;
+
+
+
+create table store(store_id int, store_num string, city string, address string, open_date string, close_date string ) row format delimited fields terminated by ','   ;
+
+
+
+
+
