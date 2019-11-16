@@ -1,0 +1,8 @@
+create database staging location '/data/input/staging';
+
+--- each table is delimited by ','
+
+use stging;
+
+
+create table store(store_id int, store_num string, city string, address string, open_date string, close_date string ) row format delimited fields terminated by ','   ;
