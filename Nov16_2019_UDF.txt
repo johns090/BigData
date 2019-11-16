@@ -36,3 +36,33 @@ hive -hiveconf hive.log.file=debug_hive_20180403.log -hiveconf hive.log.dir=/tmp
 create table result2(student_id int, bands double) row format delimited fields terminated by '|' collection items terminated by ',';
 
 insert into result2 values (1, 8.0), (1, 9.0), (1, 5.5), (1, 8.3), (2, 3.5), (2, 5.5), (2, 7.5);
+
+select * from results;
+
+create function haspassed as 'udaf.HasPassed' using jar 'hdfs://quickstart.cloudera:8020/udf/agegroup.jar';
+
+
+select student_id, bands  from result2;
+
+
+select * from result2;
+
+
+
+select student_id, haspassed(bands, 5.0, 6.0) as ispassed  from result2 group by student_id;
+
+
+create function flat as 'udtf.FlatTrans' using jar 'hdfs://quickstart.cloudera:8020/udf/agegroup.jar';
+
+
+
+
+
+
+
+
+
+
+
+
+
