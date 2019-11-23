@@ -1,0 +1,46 @@
+// Just to print nicely
+
+ttRdd.collect.foreach(x=>println(x.mkString(",")))
+
+// Program
+
+val input = sc.textFile("/data/input/spark/trans_log.csv")
+
+val fields = input.map(x=>x.split(","))
+
+val ttRdd = fields.filter(x=>x(1)=="TT")
+
+val llRdd = fields.filter(x=>x(1)=="LL")
+
+val ppRdd = fields.filter(x=>x(1)=="PP")
+
+case class tt(Trans_Seq:Int, Trans_code:String, scan_seq:Int, Product_code:String, amount:Double, discount:Double, add_remove_flag:Int, store_num:String, POS_emp_num:Int, lane:Int, timestamp:String)
+
+// Similarly you have to create case classes for LL and PP
+
+val ttDf = ttRdd.map(x=>tt(x(0).toInt, x(1), x(2).toInt, x(3), x(4).toDouble, x(5).toDouble, x(6).toInt, x(7), x(8).toInt, x(9).toInt, x(10))).toDF
+
+//Similarly you need to create dataframes for LL and PP
+
+
+
+
+###### pyspark
+
+
+
+input = sc.textFile("/data/input/spark/trans_log.csv")
+
+fields = input.map(lambda x:x.split(","))
+
+ttRdd = fields.filter(lambda x: x[1]=="TT")
+
+llRdd = fields.filter(lambda x: x[1]=="LL")
+
+ppRdd = fields.filter(lambda x:x[1]=="PP")
+
+from pyspark.sql import Row
+
+ttDf = ttRdd.map(lambda x:Row(Trans_Seq=int(x[0]), Trans_code=x[1], scan_seq=int(x[2]), Product_code=x[3], amount=float(x[4]), discount=float(x[5]), add_remove_flag=int(x[6]), store_num=x[7], POS_emp_num=int(x[8]), lane=int(x[9]), timestamp=x[10])).toDF()
+
+//Similarly you need to create dataframes for LL and PP

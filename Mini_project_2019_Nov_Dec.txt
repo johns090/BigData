@@ -20,13 +20,154 @@ create table Trans_codes(Trans_code_id int,	Trans_Code string,	Description strin
 create table Trans_Strings(Trans_code_id int,	Trans_Code string, column1 string, column2 string, column3 string, column4 string, column5 string, column6 string, column7 string, column8 string, column9 string ) row format delimited fields terminated by ','  ;
 
 
-create table target(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Id int,	Promo_Code_Id int,	Emp_Id int,	Amt double,	Qty int,	Tx_Date string) row format delimited fields terminated by ','   ;
+----- From instructor, please follow this:
+
+drop table store;
+create table store(store_id int, store_num string, city string, address string, open_dt string, close_dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+drop table employee;
+create table employee(emp_id int, emp_num int, store_num string, emp_name string, joining_dt string, designation string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+drop table promotions;
+create table promotions(promo_cd_id int, promo_cd string, description string, promo_start_dt string, promo_end_dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+drop table loyalty;
+create table loyalty(loyalty_member_id int, cust_id int, card_no string, joining_dt string, points int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+drop table product;
+create table product(product_id int, product_cd string, add_dt string, remove_dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+drop table trans_codes;
+create table trans_codes(trans_code_id int, trans_cd string, description string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+-- staging table:
+create table target_stg(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double, tx_date string) row format delimited fields terminated by ',';
+
+
+-- create partitioned table:
+use targetdb;
+
 drop table target;
+create table target(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double) partitioned by(tx_date string) row format delimited fields terminated by ',';
 
 
 
-create table store(store_id int, store_num string, city string, address string, open_date string, close_date string ) row format delimited fields terminated by ','   ;
+-----------------------------------------------------------------------------------------------------------------------------
 
+-- two ways to create data frame from RDD
+1)  .toDF() --- case class  --- only apply to Scalar, not applicable to Python ---- limit is that maximum 22 columns can be supported
+
+2) Using CreateDataFrame API ---> scheam, rowRDD 
+
+
+
+--val inputFile = sc.textFile("/data/source/miniproject/trans_log.csv")
+
+-- case class Employee (firstName:String,lastName:String, deptId:Int)
+
+-- case class Trans_strings(Trans_code_id:Int, Trans_Code:String, column1:String, column2:String, column3:String, column4:String, column5:String, column6:String, column7:String, column8:String, column9:String ) 
+
+
+
+
+--import org.apache.spark.sql.Row
+--import org.apache.spark.sql.types.{StructType, StructField, StringType, IntegerType};
+
+--val schema = StructType(Seq(StructField("firstName", StringType, true), StructField("lastName", StringType, true), StructField("deptId", IntegerType, true)))
+
+--val rowRDD = sc.textFile("/sparkInput/employee.txt").map(_.split(",")).map(e =>Row(e(0), e(1), e(2).toInt))
+
+--val peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema)
+
+val trans = sc.textFile("/data/source/miniproject/trans_log.csv").map(x=>x.split(","))
+
+var trans_TT = trans.filter(e =>e(1) == "TT")
+trans_TT.collect()
+trans_TT.collect.foreach(line=>println)
+trans_TT.count
+trans_TT.take(2)
+
+var trans_PP = trans.filter(e =>e(1) == "PP")
+trans_PP.collect()
+
+var trans_LL= trans.filter(e =>e(1) == "LL")
+trans_LL.collect()
+
+-- use case class option to create data frame
+
+case class tt(Trans_Seq:Int, Trans_code:String,	scan_seq:String, Product_code:String, amount:Double, discount:Double, add_remove_flag:Int, store_num:String, OS_emp_num:Int, lane:Int, timestamp:String)
+val ttDf = trans_TT.map(e=>tt(e(0).toInt,e(1),e(2), e(3), e(4).toDouble, e(5).toDouble, e(6).toInt, e(7), e(8).toInt, e(9).toInt, e(10))).toDF
+
+-- Data Frame functions:
+ttDf.printSchema
+ttDf.show
+ttDf.select("firstName").show
+ttDf.registerTempTable("myTable")
+
+case class pp(Trans_Seq:Int, Trans_code:String,	promo_code:String, store_num:String, POS_emp_num:Int, lane:Int, timestamp:String)
+val ppDf = trans_PP.map(e=>pp(e(0).toInt,e(1),e(2), e(3), e(4).toInt, e(5).toInt, e(6))).toDF
+ppDf.show
+
+case class ll(Trans_Seq:Int, Trans_code:String,	loyalty_card_no:String, store_num:String, POS_emp_num:Int, lane:Int, timestamp:String)
+val llDf = trans_LL.map(e=>ll(e(0).toInt,e(1),e(2), e(3), e(4).toInt, e(5).toInt, e(6))).toDF
+llDf.show
+
+
+----
+ttDf.select($"timestamp", $"store_num" , $"lane", $"trans_seq", $"timestamp" + $"store_num" ).show()
+
+ttDf.select($"lane").show().format(2)
+
+--- "%05d".format(1)
+
+
+ttDf.registerTempTable("tt")
+ RIGHT(REPLICATE('0', 5) + CAST(Field2 AS VARCHAR(5),5) 
+
+ SELECT RIGHT('000000000' + cast(lane as string) FROM tt
+
+sqlContext.sql("select lpad(lane, 2, 0), lpad(trans_seq, 4, 0)  from tt")
+
+sqlContext.sql("select concat( regexp_replace(substring( timestamp, 0,10), '-', ''), store_num, lpad(lane, 2, 0), lpad(trans_seq, 4, 0)  ) from tt")
+
+sqlContext.sql("select concat(  timestamp, store_num, lane, trans_seq ) from tt")
+
+sqlContext.sql("select substring( timestamp, 0,10) from tt")
+
+sqlContext.sql("select regexp_replace(substring( timestamp, 0,10), '-', '') from tt")
+
+sqlContext.sql("select regexp_replace(timestamp, "-", "") from tt")
+
+
+sqlContext.sql("select regexp_replace(timestamp, '-', '') from tt").show
+
+
+
+
+import sqlContext.implicits._ 
+
+import org.apache.spark.sql.Row 
+
+import org.apache.spark.sql.types.{StructType, StructField, StringType, IntegerType}; 
+
+
+// Generate schema 
+
+val schema_TT =  StructType(Seq(StructField(Trans_Seq	Trans_code	scan_seq	Product_code	amount	discount	add_remove_flag	store_num	POS_emp_num	lane	timestamp
+
+StructType(Seq(StructField("fname", StringType, true), StructField("lname", StringType, true), StructField("deptId", IntegerType, true))) 
+
+
+
+// Convert records of RDD to Rows. 
+
+val rowRDD = people.map(_.split(",")).map(e =>Row(e(0), e(1), e(2).trim.toInt)) 
+
+ 
+
+// Apply the schema to the RDD. 
+
+val peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema) 
 
 
 
