@@ -15,10 +15,45 @@ describe formatted retail_transactions;
 create table Retail_Transactions_stg (tx_id int, product_id string,  trans_date string, amt double, qty int) row format delimited fields terminated by ',';
 
 -- 3) load the csv file into the staging table 
+-- remove file header
+sed -i 1d filename  
+
 hadoop fs -chmod 777 /data/inputs/
 load data inpath '/data/inputs/Retail_Transactions_ready.csv' into table retail_transactions_stg
 
+or
+describe formatted retail_transactions_stg; -- find file location
+copy csv file to the related hdfs location of the table retail_transactions_stg
+
+invalidate metadata
+refresh table retail_transactions_stg
+
+select * from retail_transactions_stg limit 2
 
 -- 4) insert from the staging non-partitioned table to target partitioned table
 -- insert the same records from existing parititoned table , the partiton column should be the last column in the select statement
 insert into retail_transactions partition (trans_date) select tx_id, product_id, amt, qty, trans_date from retail_transactions_stg;
+
+-- show parititoned in impala
+show partitions retail_transactions;
+
+-- Apache sentry for the access control under Hadoop.
+
+-- 5) how to drop partition
+
+insert overwrite   retail_transactions_stg select * from retail_transactions_stg where trans_date != '12-Apr-12'  --- delete related records
+
+-- the follwoing: the partition is not touched
+insert overwrite   retail_transactions partition (trans_date) select * from select * from retail_transactions_stg  where  != '12-Apr-12'  --- delete related records
+
+-- correct way to drop partition
+alter table retail_transactions drop partition (trans_date='12-Apr-12')
+
+
+
+
+
+
+
+
+
