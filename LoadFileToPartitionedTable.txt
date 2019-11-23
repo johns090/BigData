@@ -1,0 +1,24 @@
+
+--- How to load data into partitioned table
+-- 1) create partitioned table, exercise:
+create table Retail_Transactions (tx_id int, product_id string, amt double, qty int) partitioned by(trans_date string) row format delimited fields terminated by ',';
+
+-- if only copy file to the manually created partition directory, hive cannot reflect the change, because you need to run "alter table ...add parition " 
+-- check table info:
+describe formatted retail_transactions;
+
+-- example:
+--insert into retail_transactions paritition (trans_date='2012-04-01') values ( 1, C123, 35.5, 40 )
+
+
+-- 2) create a non-partitioned stg table with the same layout of the csv file
+create table Retail_Transactions_stg (tx_id int, product_id string,  trans_date string, amt double, qty int) row format delimited fields terminated by ',';
+
+-- 3) load the csv file into the staging table 
+hadoop fs -chmod 777 /data/inputs/
+load data inpath '/data/inputs/Retail_Transactions_ready.csv' into table retail_transactions_stg
+
+
+-- 4) insert from the staging non-partitioned table to target partitioned table
+-- insert the same records from existing parititoned table , the partiton column should be the last column in the select statement
+insert into retail_transactions partition (trans_date) select tx_id, product_id, amt, qty, trans_date from retail_transactions_stg;
