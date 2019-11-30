@@ -325,7 +325,7 @@ sqlContext.sql("use staging")
 sqlContext.sql("""
 
 with tt as (
-select getTransId(t.timestamp, s.store_num, t.lane, t.Trans_Seq ) as tx_id, t.*
+select getTransId(t.timestamp, s.store_num, t.lane, t.Trans_Seq ) as tx_id, t.* -- t.Trans_Seq, t.Trans_code, t.scan_seq, t.Product_code, t.amount, t.discount, t.add_remove_flag, t.store_num, t.OS_emp_num, t.lane, t.timestamp 
 from ttTable t 
 left join store s on s.store_num = t.store_num ) ,
 pp as (
@@ -336,12 +336,12 @@ ll as (
 select getTransId(l.timestamp, s.store_num, l.lane, l.Trans_Seq ) as tx_id, l.loyalty_card_no
 from ttTable l
 left join store s on s.store_num = l.store_num ) 
---select * from tt
-select tx_id,tt.Trans_Seq,tt.Trans_code,tt.scan_seq,tt. Product_code,tt.amount,tt.discount,tt.add_remove_flag,tt.store_num,tt.OS_emp_num,tt.lane,tt.timestamp,
-pp.promo_code, ll.loyalty_card_no
+
+select tt.Trans_Seq, tt.Trans_code, tt.scan_seq, tt.Product_code, tt.amount, tt.discount, tt.add_remove_flag, tt.store_num, tt.OS_emp_num, tt.lane, tt.timestamp , -- tt.tx_id, 
+, pp.promo_code,  ll.loyalty_card_no
 from tt
-letf join pp on pp.tx_id = tt.tx_id
-left join ll on ll.tx_id = tt.tx_id
+--letf join pp on pp.tx_id = tt.tx_id
+--left join ll on ll.tx_id = tt.tx_id
 
 """).show
 
