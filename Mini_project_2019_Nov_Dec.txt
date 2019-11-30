@@ -25,35 +25,51 @@ create table Trans_Strings(Trans_code_id int,	Trans_Code string, column1 string,
 drop table store;
 create table store(store_id int, store_num string, city string, address string, open_dt string, close_dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
 
+
+hadoop fs -copyFromLocal /home/cloudera/Desktop/MiniProject/store.csv /data/input/staging/store
+
+
 drop table employee;
 create table employee(emp_id int, emp_num int, store_num string, emp_name string, joining_dt string, designation string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+hadoop fs -copyFromLocal /home/cloudera/Desktop/MiniProject/employee.csv /data/input/staging/employee
 
 drop table promotions;
 create table promotions(promo_cd_id int, promo_cd string, description string, promo_start_dt string, promo_end_dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
 
+hadoop fs -copyFromLocal /home/cloudera/Desktop/MiniProject/promotions.csv /data/input/staging/promotions
+
 drop table loyalty;
 create table loyalty(loyalty_member_id int, cust_id int, card_no string, joining_dt string, points int) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
+
+hadoop fs -copyFromLocal /home/cloudera/Desktop/MiniProject/loyalty.csv /data/input/staging/loyalty
 
 drop table product;
 create table product(product_id int, product_cd string, add_dt string, remove_dt string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
 
+hadoop fs -copyFromLocal /home/cloudera/Desktop/MiniProject/product.csv /data/input/staging/product
+
 drop table trans_codes;
 create table trans_codes(trans_code_id int, trans_cd string, description string) ROW FORMAT DELIMITED FIELDS TERMINATED BY ",";
 
+hadoop fs -copyFromLocal /home/cloudera/Desktop/MiniProject/trans_code.csv /data/input/staging/trans_codes
+
+
 -- staging table:
-create table target_stg(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double, tx_date string) row format delimited fields terminated by ',';
+drop table target_stg;
+create table target_stg(Tx_Id bigint,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double, tx_date string) row format delimited fields terminated by ',';
 
 
 -- create partitioned table:
 use targetdb;
 
 drop table target;
-create table target(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double) partitioned by(tx_date string) row format delimited fields terminated by ',';
+    create table target(Tx_Id bigint,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double) partitioned by(tx_date string) row format delimited fields terminated by ',';
 
-
+sqlContext.sql("use staging")
 
 -----------------------------------------------------------------------------------------------------------------------------
-
+-- Under Scala
 -- two ways to create data frame from RDD
 1)  .toDF() --- case class  --- only apply to Scalar, not applicable to Python ---- limit is that maximum 22 columns can be supported
 
@@ -79,7 +95,9 @@ create table target(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num 
 
 --val peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema)
 
-val trans = sc.textFile("/data/source/miniproject/trans_log.csv").map(x=>x.split(","))
+---- split data first
+
+val trans = sc.textFile("/data/source/miniproject/trans_log.csv").map(x=>x.split(","))    
 
 var trans_TT = trans.filter(e =>e(1) == "TT")
 trans_TT.collect()
@@ -101,8 +119,10 @@ val ttDf = trans_TT.map(e=>tt(e(0).toInt,e(1),e(2), e(3), e(4).toDouble, e(5).to
 -- Data Frame functions:
 ttDf.printSchema
 ttDf.show
-ttDf.select("firstName").show
-ttDf.registerTempTable("myTable")
+ttDf.select("Trans_code").show
+ttDf.registerTempTable("ttTable")
+
+sqlContext.sql("select * from ttTable").show
 
 case class pp(Trans_Seq:Int, Trans_code:String,	promo_code:String, store_num:String, POS_emp_num:Int, lane:Int, timestamp:String)
 val ppDf = trans_PP.map(e=>pp(e(0).toInt,e(1),e(2), e(3), e(4).toInt, e(5).toInt, e(6))).toDF
@@ -168,6 +188,245 @@ val rowRDD = people.map(_.split(",")).map(e =>Row(e(0), e(1), e(2).trim.toInt))
 // Apply the schema to the RDD. 
 
 val peopleDataFrame = sqlContext.createDataFrame(rowRDD, schema) 
+
+
+---------- load store.csv -------------------------------
+-- this step is not necessary actually as in Hive you already have store data loaded.
+
+val stores = sc.textFile("/data/source/miniproject/store.csv").map(x=>x.split(","))    ---- split data first
+
+val stores = sc.textFile("/data/source/miniproject/store.csv").map(x=>x.split(",", -1))  
+
+
+//////////////////////////
+
+
+
+The split function is neglecting all the empty fields at the end of splitted line. So,
+Change your following line 
+ val splitRDD = custCardRDD.map(elem => elem.split("\\u0001"))
+to 
+val splitRDD = custCardRDD.map(elem => elem.split("\\u0001", -1))
+-1 tells to consider all the empty fields. 
+
+https://stackoverflow.com/questions/45962453/why-is-spark-throwing-an-arrayindexoutofboundsexception-expection-for-empty-attr
+
+//////////////////////
+
+
+stores.collect()
+
+case class store(store_id:Int, store_num:String, city:String, address:String, open_dt:String, close_dt:String) 
+
+--- var storeTemp = stores.map(e=>store(e(0).toInt,e(1),e(2), e(3), e(4), e(5)))
+
+val storeDf = stores.map(e=>store(e(0).toInt,e(1),e(2), e(3), e(4), e(5))).toDF
+
+
+--val ttDf = ttDf.join(storeDf, ttDf.store_num == storeDf.store_num) 
+--val sttDf = ttDf.join(storeDf, ttDf.store_num == storeDf.store_num)  --.drop(up_ddf.name)
+
+storeDf.registerTempTable("store")
+sqlContext.sql("select * from store").show
+
+sqlContext.sql("select getTransId('2018-01-01 222', 1, 2, 3) from store ").show
+
+
+------------------------- UDF under scalar ---------------------------------------------
+
+-- use "Long" as return type to be helpful for future performance, as we know the first date column will not have leading zeros. Otherwise we need to return as "String".
+
+--import org.apache.spark.sql.functions.udf
+
+
+sqlContext.sql("use staging")
+
+
+def getTransId(date_p:String, storeid_p:Int, lane_p:Int, trans_seq_p:Int): Long = 
+{
+  val date = date_p.split(" ")(0).replaceAll("-","")
+  val storeid = "%05d".format(storeid_p)
+  val lane = "%02d".format(lane_p)
+  val trans_seq= "%04d".format(trans_seq_p)
+
+  (date + storeid.toString + lane.toString + trans_seq.toString).toLong
+
+}
+
+val transId = getTransId(_,_,_,_)
+
+--- tid used in spark df, but getTransId used in SqlContext
+
+val tid = sqlContext.udf.register("getTransId", transId)   
+sqlContext.sql("select getTransId('2018-01-01 222', 1, 2, 3) from ttTable ").show
+
+
+-- df.select(tid(ttDf("timestamp"), ttDf("store_id"), ttDf("lane"), ttDf("Trans_seq")))
+
+sqlContext.sql("select getTransId('2018-01-01 222', 1, 2, 3) from ttTable ").show
+
+sqlContext.sql("select * from tttable").show
+
+sqlContext.sql("select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) from staging.store s, tttable t where t.store_num = s.store_num").show
+
+-- or specify database name
+
+
+sqlContext.sql("select * from store s, tttable t where t.store_num = s.store_num").show
+
+-------------- Insert for TT & PP & LL transaction IDs link ------------------------------------------------------
+ ttDf.show
+ttDf.registerTempTable("ttTable")
+sqlContext.sql("select * from ttTable").show
+
++---------+----------+--------+-------------+------+--------+---------------+---------+----------+----+----------------+
+|Trans_Seq|Trans_code|scan_seq| Product_code|amount|discount|add_remove_flag|store_num|OS_emp_num|lane|       timestamp|
++---------+----------+--------+-------------+------+--------+---------------+---------+----------+----+----------------+
+|        2|        TT|       1|        Bread|  12.0|     2.0|              1|    SDHJ0|        23|   1|2018-01-01 20:21|
+|        2|        TT|       2| Scandinavian|   8.0|     0.0|              1|    SDHJ0|        23|   1|2018-01-01 20:22|
+|        2|        TT|       3|Hot chocolate|  5.78|     1.2|              1|    SDHJ0|        23|   1|2018-01-01 20:23|
+|        2|        TT|       4|          Jam|   2.5|     0.0|              1|    SDHJ0|        23|   1|2018-01-01 20:24|
+|        2|        TT|       5|      Cookies|  5.78|     0.0|             -1|    SDHJ0|        23|   1|2018-01-01 20:25|
+|        6|        TT|       1|        Bread|  12.0|     0.0|              1|    SDHJ0|         4|   1|2018-01-01 21:30|
+|        6|        TT|       2| Scandinavian|   8.0|     0.0|              1|    SDHJ0|         4|   1|2018-01-01 21:30|
+|        6|        TT|       3|Hot chocolate|  5.78|     0.0|              1|    SDHJ0|         4|   1|2018-01-01 21:30|
+|        6|        TT|       4|          Jam|   2.5|     0.0|              1|    SDHJ0|         4|   1|2018-01-01 21:30|
+|        6|        TT|       5|       Muffin|  10.0|     2.0|              1|    SDHJ0|         4|   1|2018-01-01 21:31|
++---------+----------+--------+-------------+------+--------+---------------+---------+----------+----+----------------+
+
+
+ppDf.show
+ppDf.registerTempTable("ppTable")
+
+sqlContext.sql("select * from ppTable").show
+
++---------+----------+-----------+---------+-----------+----+----------------+
+|Trans_Seq|Trans_code| promo_code|store_num|POS_emp_num|lane|       timestamp|
++---------+----------+-----------+---------+-----------+----+----------------+
+|        2|        PP|loyaltydisc|    SDHJ0|         23|   1|2018-01-01 20:27|
++---------+----------+-----------+---------+-----------+----+----------------+
+
+llDf.show
+
+llDf.registerTempTable("llTable")
+
+sqlContext.sql("select * from llTable").show
+
++---------+----------+---------------+---------+-----------+----+----------------+
+|Trans_Seq|Trans_code|loyalty_card_no|store_num|POS_emp_num|lane|       timestamp|
++---------+----------+---------------+---------+-----------+----+----------------+
+|        2|        LL|          PQR1W|    SDHJ0|         23|   1|2018-01-01 20:26|
++---------+----------+---------------+---------+-----------+----+----------------+
+
+-- 
+sqlContext.sql("use staging")
+
+
+sqlContext.sql("""
+
+with tt as (
+select getTransId(t.timestamp, s.store_num, t.lane, t.Trans_Seq ) as tx_id, t.*
+from ttTable t 
+left join store s on s.store_num = t.store_num ) ,
+pp as (
+select getTransId(p.timestamp, s.store_num, p.lane, p.Trans_Seq ) as tx_id, p.promo_code
+from ppTable p
+left join store s on s.store_num = p.store_num ) ,
+ll as (
+select getTransId(l.timestamp, s.store_num, l.lane, l.Trans_Seq ) as tx_id, l.loyalty_card_no
+from ttTable l
+left join store s on s.store_num = l.store_num ) 
+--select * from tt
+select tx_id,tt.Trans_Seq,tt.Trans_code,tt.scan_seq,tt. Product_code,tt.amount,tt.discount,tt.add_remove_flag,tt.store_num,tt.OS_emp_num,tt.lane,tt.timestamp,
+pp.promo_code, ll.loyalty_card_no
+from tt
+letf join pp on pp.tx_id = tt.tx_id
+left join ll on ll.tx_id = tt.tx_id
+
+""").show
+
+
+
+------------------------------ Insert for TT ---------------------------------------------------------
+sqlContext.sql("""select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) as Tx_id, s.store_id, p.product_id, null, null, e.emp_id,  t.amount, t.discount, timestamp
+ from staging.store s, tttable t, product p , employee e
+ where t.store_num = s.store_num 
+   and p.product_cd = t.product_code
+  and e.emp_num = t.OS_emp_num """).show
+
+sqlContext.sql("""select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) as Tx_id, s.store_id, p.product_id, null, null, e.emp_id,  t.amount, t.discount, timestamp
+ from tttable t
+ left join staging.store s on t.store_num = s.store_num
+ left join product p on p.product_cd = t.product_code
+ left join employee e on e.emp_num = t.OS_emp_num
+  """).show
+
+
+sqlContext.sql("""insert into target_stg   --(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double, tx_date string)
+select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) as Tx_id, s.store_id, p.product_id, null as loyaltyNum, null as PromoCode, e.emp_id,  t.amount, t.discount, timestamp
+ from tttable t
+ left join staging.store s on t.store_num = s.store_num
+ left join product p on p.product_cd = t.product_code
+ left join employee e on e.emp_num = t.OS_emp_num """).show
+
+---- under Impala /Hive
+refresh target_stg; 
+select * from target_stg;
+
+
+
+
+sqlContext.sql("""select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) as Tx_id, s.store_id, null as product_id, null as loyaltyNum, p.promo_cd_id, e.emp_id,  null as amount, null as discount, timestamp
+ from ppTable t
+ left join staging.store s on t.store_num = s.store_num
+ left join promotions p on t.promo_code = p.promo_cd
+ left join employee e on e.emp_num = t.POS_emp_num """).show
+
+sqlContext.sql("""insert into target_stg   --(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double, tx_date string)
+ select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) as Tx_id, s.store_id, null as product_id, null as loyaltyNum, p.promo_cd_id, e.emp_id,  null as amount, null as discount, timestamp
+ from ppTable t
+ left join staging.store s on t.store_num = s.store_num
+ left join promotions p on t.promo_code = p.promo_cd
+ left join employee e on e.emp_num = t.POS_emp_num """).show
+
+
+
+-------------- Insert for LL
+
+
+sqlContext.sql("""select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) as Tx_id, s.store_id, null as product_id, l.loyalty_member_id, null as promo_cd_id, e.emp_id,  null as amount, null as discount, timestamp
+ from llTable t
+ left join staging.store s on t.store_num = s.store_num
+ left join loyalty l on t.loyalty_card_no = l.card_no 
+ left join employee e on e.emp_num = t.POS_emp_num """).show
+
+sqlContext.sql("""insert into target_stg   --(Tx_Id int,	Store_Id int,	Product_Id int,	Loyalty_Member_Num int,	Promo_Code_Id int, Emp_Id int,	Amt double,	Discount_Amt double, tx_date string)
+ select getTransId(t.timestamp, s.store_id, t.lane, t.Trans_Seq ) as Tx_id, s.store_id, null as product_id, l.loyalty_member_id, null as promo_cd_id, e.emp_id,  null as amount, null as discount, timestamp
+ from llTable t
+ left join staging.store s on t.store_num = s.store_num
+ left join loyalty l on t.loyalty_card_no = l.card_no 
+ left join employee e on e.emp_num = t.POS_emp_num """).show
+
+
+
+---- Insert into target partitioned table ---------------------
+
+insert into targetdb.target partition (tx_date) select Tx_Id,	Store_Id,Product_Id,Loyalty_Member_Num,Promo_Code_Id, Emp_Id, Amt, Discount_Amt, tx_date  from target_stg;
+
+
+hadoop fs -ls /data/target/targetdb/target
+
+
+hadoop fs -ls /data/target/targetdb/target/"tx_date=2018-01-01 21%3A30"
+
+
+
+
+
+
+
+
+
 
 
 
