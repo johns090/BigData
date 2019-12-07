@@ -433,7 +433,7 @@ hadoop fs -ls /data/target/targetdb/target/"tx_date=2018-01-01 21%3A30"
 
 
 
-5) 
+5) Use IntelliJ IDEA to build the code into Java to load automatically
 
 spark-submit --class "MyMain" --master local[1] /home/cloudera/Desktop/MiniProject/project4_2.11-0.1.jar
 
