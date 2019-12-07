@@ -1,0 +1,15 @@
+###### Add in build.sbt file
+
+// https://mvnrepository.com/artifact/org.apache.spark/spark-core
+libraryDependencies += "org.apache.spark" %% "spark-core" % "1.6.0"
+// https://mvnrepository.com/artifact/org.apache.spark/spark-hive
+libraryDependencies += "org.apache.spark" %% "spark-hive" % "1.6.0" % "provided"
+
+
+####### SBT commands to prepare jar file
+clean
+package
+
+###### Command to run JAR file in VM
+
+spark-submit --class "MyMain" --master local[1] miniproject_2.11-0.1.jar

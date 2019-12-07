@@ -418,7 +418,7 @@ where r.store_id is null;
 
 --truncate table targetdb.target;
 -- drop all parititions:
-alter table targetdb.target drop partition (tx_date <> '');
+sqlContext.sql(""" alter table targetdb.target drop partition (tx_date <> '') """)
 
 
 insert into targetdb.target partition (tx_date) select Tx_Id,	Store_Id,Product_Id,Loyalty_Member_Num,Promo_Code_Id, Emp_Id, Amt, Discount_Amt, tx_date  from target_stg;
@@ -432,6 +432,10 @@ hadoop fs -ls /data/target/targetdb/target
 hadoop fs -ls /data/target/targetdb/target/"tx_date=2018-01-01 21%3A30"
 
 
+
+5) 
+
+spark-submit --class "MyMain" --master local[1] /home/cloudera/Desktop/MiniProject/project4_2.11-0.1.jar
 
 
 
