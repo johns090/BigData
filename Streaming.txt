@@ -1,0 +1,11 @@
+
+
+https://spark.apache.org/docs/latest/streaming-programming-guide.html
+
+
+
+nc -lk 9999
+
+spark-submit /home/cloudera/Desktop/Streaming/mystreaming.py
+
+
