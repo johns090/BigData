@@ -1,0 +1,37 @@
+2020-Jan-18
+
+quesiton:
+? why mapreduce
+? why spark
+
+Mapreduecle mimitition (map, reduce, driver) --- > slower process , not in memory , map/reducle, a lot IO ----> Spark keep data in memeory
+
+
+data holder
+RDD, dataframe, dataset
+lazy operation  --- DAC --- 
+distribution data --- 
+
+read from HDFS ---- a file, then return RDD, into different number of partitions, the spark process (driver & executor ) own the partition 
+
+
+different file format, with different compression format
+
+different level of caching in RDD and DataFrame --- 
+
+Python only support RDD and Dataframe, but not Dateset, because Puyton doesn't scroit rule for data type
+
+Spark 1.6.0 --> 2.4.0
+
+ubuntu-16.04.6-desktop-i386
+
+
+ 
+
+
+
+
+
+
+
+
