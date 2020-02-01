@@ -41,6 +41,175 @@ https://docs.google.com/document/d/19ukLqUHucPGm364XiGvOfmJm92knlXlQP5x1cR0vBLQ/
  tx.filter(tx.store_num.isNotNull()).show()
 
 
+-- topic modelling  --- clustering
+
+
+-------------------------------- tasks 2 ----------------------------
+
+1. StopWordsRemover
+Removes unnecessary words, e.g. articles and to-be forms.
+Input should be a bag of words
+>>> rdd = sc.textFile("/home/student/Documents/dataLesson3/task2/data.txt")
+    rdd.collect()
+>>> from pyspark.ml.feature import StopWordsRemover
+>>> ----- rdd = sc.textFile("data.txt")
+>>> rdd2 = rdd.map(lambda x: x.split(" "))
+    rdd2.collect()
+>>> from pyspark.sql import Row
+>>> rdd3 = rdd2.map(lambda x: Row(x))
+    --rdd3.collect()
+>>> df = spark.createDataFrame(rdd3, ["words"])
+>>> remover = StopWordsRemover(inputCol="words", outputCol="filtered")
+>>> remover.transform(df).show(truncate=False)
+
+2. N-gram
+Gives a pair of n-consecutive words:
+E.g. 2-gram of sentence: “Hi my name is John”
+[“Hi my”, “my name”, “name is”, “is John”]
+>>> rdd = sc.textFile("/home/student/Documents/dataLesson3/task2/data1.txt")
+>>> rdd2 = rdd.map(lambda x: x.split(" "))
+>>> rdd3 = rdd2.map(lambda x: Row(x))
+>>> df = spark.createDataFrame(rdd3, ["words"])
+>>> from pyspark.ml.feature import NGram
+>>> ngram = NGram(n=2, inputCol="words", outputCol="ngrams")
+>>> ngramDataFrame = ngram.transform(df)
+>>> ngramDataFrame.select("ngrams").show(truncate=False)
+
+3. Binarizer
+Transform a column into binary values. A value below threshold=0 and above threshold=1
+>>> from pyspark.ml.feature import Binarizer
+>>> continuousDataFrame = spark.createDataFrame([(0, 0.1), (1, 0.8), (2, 0.2)], ["id", "feature"])
+>>> binarizer = Binarizer(threshold=0.5, inputCol="feature", outputCol="binarized_feature")
+>>> binarizedDataFrame = binarizer.transform(continuousDataFrame)
+>>> binarizedDataFrame.show()
+
+4. Normalizer
+Normalize the values of a vector to make it a unit vector
+>>> from pyspark.ml.feature import Normalizer
+>>> from pyspark.ml.linalg import Vectors
+>>> dataFrame = spark.createDataFrame([(0, Vectors.dense([4, 1, 2, 2]),), (1, Vectors.dense([1, 3, 9, 3]),), (2, Vectors.dense([5, 7, 5, 1]),)], ["id", "features"])
+>>> normalizer = Normalizer(inputCol="features", outputCol="normFeatures", p=1.0)
+>>> normData = normalizer.transform(dataFrame)
+>>> normData.show(truncate=False)
+
+5. SQLTransformer
+Apply a SQL on features to generate other feature columns
+>>> from pyspark.ml.feature import SQLTransformer
+>>> df = spark.createDataFrame([(0, 1.0, 3.0), (2, 2.0, 5.0)], ["id", "v1", "v2"])
+>>> sqlTrans = SQLTransformer(statement="SELECT *, (v1 + v2) AS v3, (v1 * v2) AS v4 FROM __THIS__")
+>>> sqlTrans.transform(df).show()
+
+---------------------- task 3 ---------------------------
+
+
+To Do
+
+
+---------------------- task 4 ---------------------------
+
+RDD distubtes variables to some nodes
+
+"Broadcaset" variables to all the node for all executors
+
+similar concept used in Hadoop "map side join", which distriute small data set to all nodes.
+
+"Accumulator"  --- aggregated value can only be collected by driver, but added by executors
+
+
+Task 4
+Objective: Broadcast variables and counters
+
+Broadcast variables:
+
+Objects which will be cached on each executor in deserialized form.
+
+How to broadcast:
+bcast_var = sc.broadcast(5)
+
+How to access:
+bcast_var.value
+
+Note: We can’t broadcast an RDD or DF.
+	However, we can collect an RDD as Map using collectAsMap action and broadcast it 
+
+rdd1 = sc.textFile("/home/student/Documents/dataLesson3/task2/data.txt")
+result = rdd1.map(lambda x: (x[0],x[1])).collectAsMap()
+sc.broadcast(result)
+
+Use case: Map side join or lookup functionality
+
+Accumulators:
+
+Helps to aggregate across all executors.
+
+Initialize:
+cntr = sc.accumulator(0)
+
+Aggregate on executors:
+cntr.add(1)
+
+Read on driver:
+cntr.value
+
+Note: supported data types should be added through associative and commutative operation. Can be incremented by executors but only be read by driver.
+	Try creating an accumulator for string data.
+
+Use case: Implement counters across different stages like in MapReduce program
+
+
+
+-------------------  task 5 ---------------------------------
+Three different ways to pass configuration parameters:
+1) config file  --- lowest precedent
+2) command line  --- higher precedent
+3) within code  --- higheset precedent
+
+spark.conf.get("spark.driver.memory", "1.5g")
+
+Task 5
+Objective: How to pass configuration parameters to spark job
+
+Use script provided under task5 directory 
+
+1: Provide configuration parameter through config file
+Prepare conf.py file with following content
+spark.driver.memory     20G
+
+Execute the script as following:
+spark-submit --properties-file conf.py python_code.py
+
+2: Provide configuration parameter through config file along with command line config 
+spark-submit --properties-file conf.py --conf spark.driver.memory=25G python_code.py
+
+3: Provide configuration parameter through config file, command line config and also command line option
+spark-submit --properties-file conf.py --conf spark.driver.memory=20G --driver-memory 30G python_code.py
+
+Ref:
+https://spark.apache.org/docs/latest/configuration.html
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
