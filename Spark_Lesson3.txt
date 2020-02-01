@@ -1,0 +1,52 @@
+
+df.cache()  --- check how it works 
+
+Hadoop: mapper & reducer & driver
+Spark: driver  ("collect" command ) & executor
+
+df.collect() --- cannot be used for large size of data, so avoid using collect() operation, but collect can be used for if/else condition with small data.
+
+
+createGlobalTempView(self, name)
+spark.sql("select * from global_temp.df_view").show(3)  -- show first three records
+
+
+crossJoin(self, other) --- understand cross join
+
+
+---- test  cross join ----
+
+from pyspark.sql import functions as F
+
+from pyspark.sql import Row
+
+s = spark.createDataFrame([Row("s1", "Montreal"), Row("s2", "Toronto")], ["store_num", "store_name"] )
+
+p = spark.createDataFrame([Row("p1", "Banana"), Row("p2", "Apple")], ["product_num", "product_name"] )
+
+t = spark.createDataFrame([Row("t1", "s1", "p1",3), Row("t2", "s2", "p2",4)], ["transaction_num", "store_num","product_num", "amount"] )
+
+
+from pyspark.sql.functions import col
+
+sp = s.crossJoin(p)
+
+--- ?? not working this syntax: sp.join(t, sp.store_num==t.store_num & sp.product_num==t.product_num, how='left')
+sp.join(t, on=['store_num', 'product_num'], how='left').select("store_name", "product_name", F.when(t.transaction_num.isNull(), "NO").otherwise("YES").alias("status")).show()
+
+https://docs.google.com/document/d/19ukLqUHucPGm364XiGvOfmJm92knlXlQP5x1cR0vBLQ/edit
+
+
+ tx.filter(tx.store_num!="null").show()
+ tx.filter(tx.store_num.isNotNull()).show()
+
+
+
+
+
+
+
+
+
+
+
